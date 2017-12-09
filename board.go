@@ -7,14 +7,14 @@ Board and Cell structure
 ***************************/
 
 type Cell struct {
-	vPos   *coord
-	pPiece *Piece
+	vPos   coord
+	pPiece Piece
 }
 
 type Board struct {
 	pCells       [8][8]*Cell
-	pWhitePieces [16]*Piece
-	pBlackPieces [16]*Piece
+	pWhitePieces [16]Piece
+	pBlackPieces [16]Piece
 	whoseMove    int
 }
 
@@ -27,7 +27,7 @@ and setup pieces
 func createCell(x int, y int) *Cell {
 	cell := new(Cell)
 
-	coord := createCoord(x, y)
+	coord := coord{x: x, y: y}
 
 	cell.vPos = coord
 	cell.pPiece = nil
@@ -35,12 +35,43 @@ func createCell(x int, y int) *Cell {
 	return cell
 }
 
-func createPieces(team int) [16]*Piece {
-	return *(new([16]*Piece))
-}
+func createPieces(team int, board *Board) [16]Piece {
+	pieces := *(new([16]Piece))
+	for i := 0; i < 8; i++ {
+		pieces[i] = new(Pawn)
+	}
 
-func setPieces(boar *Board, bPieces [16]*Piece, wPieces [16]*Piece) {
+	pieces[8] = new(Rook)
+	pieces[9] = new(Knight)
+	pieces[10] = new(Bishop)
+	pieces[11] = new(Queen)
+	pieces[12] = new(King)
+	pieces[13] = new(Bishop)
+	pieces[14] = new(Knight)
+	pieces[15] = new(Rook)
 
+	for i := 0; i < 16; i++ {
+		pieces[i].create(team)
+	}
+
+	pawnRow := 2
+	offset := -1
+	if team == 1 {
+		pawnRow = 6
+		offset = 1
+	}
+	currIdx := 0
+
+	for shift := 0; shift <= 1; shift++ {
+		for x_coord := 0; x_coord < 8; x_coord++ {
+			y_coord := shift*offset + pawnRow
+
+			board.pCells[x_coord][y_coord].pPiece = pieces[currIdx]
+			currIdx++
+		}
+	}
+
+	return pieces
 }
 
 func createBoard() *Board {
@@ -54,11 +85,9 @@ func createBoard() *Board {
 		}
 	}
 
-	board.pBlackPieces = createPieces(0)
-	board.pWhitePieces = createPieces(1)
+	board.pBlackPieces = createPieces(0, board)
+	board.pWhitePieces = createPieces(1, board)
 	board.whoseMove = 1
-
-	setPieces(board, board.pBlackPieces, board.pWhitePieces)
 
 	return board
 }
@@ -69,7 +98,7 @@ Interface to keep track of board cells
 
 ***************************/
 
-func pieceAtCell(cBoa *Board, coor coord) *Piece {
+func pieceAtCell(cBoa *Board, coor coord) Piece {
 	return (*((*cBoa).pCells)[coor.x][coor.y]).pPiece
 }
 
