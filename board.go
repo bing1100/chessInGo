@@ -54,7 +54,7 @@ func createPieces(team int, board *Board) [16]Piece {
 		pieces[i].create(team)
 	}
 
-	pawnRow := 2
+	pawnRow := 1
 	offset := -1
 	if team == 1 {
 		pawnRow = 6
@@ -109,3 +109,9 @@ func cellAttacked(cBoa *Board, coor coord) bool {
 func boardValidState(cBoa *Board) {
 
 }
+
+/****************************
+
+Move function that moves piece
+
+****************************/
