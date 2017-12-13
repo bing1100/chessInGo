@@ -12,10 +12,9 @@ type Cell struct {
 }
 
 type Board struct {
-	pCells       [8][8]*Cell
-	pWhitePieces [16]Piece
-	pBlackPieces [16]Piece
-	whoseMove    int
+	pCells    [8][8]*Cell
+	pieces    [2][16]Piece
+	whoseMove int
 }
 
 /***************************
@@ -27,7 +26,7 @@ and setup pieces
 func createCell(x int, y int) *Cell {
 	cell := new(Cell)
 
-	coord := coord{x: x, y: y}
+	coord := coordData{x: x, y: y}
 
 	cell.vPos = coord
 	cell.pPiece = nil
@@ -63,10 +62,14 @@ func createPieces(team int, board *Board) [16]Piece {
 	currIdx := 0
 
 	for shift := 0; shift <= 1; shift++ {
-		for x_coord := 0; x_coord < 8; x_coord++ {
-			y_coord := shift*offset + pawnRow
+		for y_coord := 0; y_coord < 8; y_coord++ {
+			x_coord := shift*offset + pawnRow
 
 			board.pCells[x_coord][y_coord].pPiece = pieces[currIdx]
+			if !pieces[currIdx].setLoc(board, coordData{x: x_coord, y: y_coord}) {
+				print("ERROR: Setting locations when creating board failed")
+				return pieces
+			}
 			currIdx++
 		}
 	}
@@ -85,8 +88,8 @@ func createBoard() *Board {
 		}
 	}
 
-	board.pBlackPieces = createPieces(0, board)
-	board.pWhitePieces = createPieces(1, board)
+	board.pieces[0] = createPieces(0, board)
+	board.pieces[1] = createPieces(1, board)
 	board.whoseMove = 1
 
 	return board
@@ -99,15 +102,70 @@ Interface to keep track of board cells
 ***************************/
 
 func pieceAtCell(cBoa *Board, coor coord) Piece {
-	return (*((*cBoa).pCells)[coor.x][coor.y]).pPiece
+	return (*((*cBoa).pCells)[coor.getX()][coor.getY()]).pPiece
 }
 
-func cellAttacked(cBoa *Board, coor coord) bool {
+func cellAttacked(cBoa *Board, coor coord, team int) bool {
+
+	for pieceIdx := 0; pieceIdx <= 15; pieceIdx++ {
+		piece := cBoa.pieces[team][pieceIdx]
+		if piece.move(coor, cBoa) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func killPiece(cBoa *Board, coor coord) {
+	cell := (*((*cBoa).pCells)[coor.getX()][coor.getY()])
+	if cell.pPiece != nil {
+		if !(cell.pPiece.setDead()) {
+			println("Piece in cell was already dead")
+		}
+	} else {
+		println("Tried to kill empty cell")
+	}
+
+	cell.pPiece = nil
+}
+
+/***************************
+
+Interface to keep track of board state
+
+***************************/
+
+func boardValidState(cBoa *Board) bool {
+	kLoc := cBoa.pieces[cBoa.whoseMove][12].getLoc()
+	return cellAttacked(cBoa, kLoc, (cBoa.whoseMove+1)%2)
+}
+
+func checkStaleMate(cBoa *Board) bool {
+	kLoc := cBoa.pieces[cBoa.whoseMove][12].getLoc()
+	for x_offset := -1; x_offset <= -1; x_offset++ {
+		for y_offset := -1; y_offset <= -1; y_offset++ {
+			if x_offset != 0 && y_offset != 0 {
+				x := kLoc.getX() + x_offset
+				y := kLoc.getY() + y_offset
+
+				if (x >= 0 && x <= 7) && (y >= 0 && y <= 7) {
+					if !cellAttacked(cBoa, coordData{x: x, y: y}, (cBoa.whoseMove+1)%2) {
+						return false
+					}
+				}
+			}
+		}
+	}
 	return true
 }
 
-func boardValidState(cBoa *Board) {
-
+func checkCheckMate(cBoa *Board) bool {
+	kLoc := cBoa.pieces[cBoa.whoseMove][12].getLoc()
+	if checkStaleMate(cBoa) {
+		return cellAttacked(cBoa, kLoc, (cBoa.whoseMove+1)%2)
+	}
+	return false
 }
 
 /****************************
@@ -115,3 +173,17 @@ func boardValidState(cBoa *Board) {
 Move function that moves piece
 
 ****************************/
+func move(cPos coord, nPos coord, board *Board) res {
+	cPiece := pieceAtCell(board, cPos)
+	failure := res{false, board}
+	nBoard := Copy(board)
+	success := res{true, nBoard.(*Board)}
+
+	if cPiece == nil {
+
+		return failure
+
+	}
+	return success
+
+}
