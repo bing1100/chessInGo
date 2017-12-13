@@ -5,9 +5,9 @@ import (
 )
 
 // ASCII print of the board object
-func showASCII(board *Board) {
-	for x := 0; x < 8; x++ {
-		for y := 0; y < 8; y++ {
+func showASCII(board *BoardData) {
+	for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
 			piece := board.pCells[x][y].pPiece
 			if piece != nil {
 				print(piece.getChar())
@@ -25,7 +25,7 @@ func check(e error) {
 		panic(e)
 	}
 }
-func showHTML(board *Board) {
+func showHTML(board *BoardData) {
 	f, err := os.Create("/home/bhux/Downloads/chess/index.html")
 	check(err)
 	defer f.Close()
@@ -46,10 +46,10 @@ func showHTML(board *Board) {
 	cellTypes := []string{"cB", "cW"}
 	textColor := []string{"black", "white"}
 	idx := 0
-	for x := 0; x < 8; x++ {
+	for y := 0; y < 8; y++ {
 		f.WriteString("<tr>\n")
 		idx++
-		for y := 0; y < 8; y++ {
+		for x := 0; x < 8; x++ {
 			piece := board.pCells[x][y].pPiece
 			cType := cellTypes[idx%2]
 

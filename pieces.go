@@ -15,28 +15,23 @@ type basePiece struct {
 	loc       coord
 }
 
+/*Piece
+ */
 type Piece interface {
 	create(team int)
-	move(nPos coord, board *Board) bool
-	specialMove(nPos coord, board *Board) bool
+	move(nPos coord, board *BoardData) bool
+	specialMove(nPos coord, board *BoardData) bool
 	hasMoved() bool
 	getTeam() int
 	getName() string
 	getChar() string
-	setLoc(board *Board, nPos coord) bool
+	setLoc(board *BoardData, nPos coord) bool
 	getLoc() coord
 	setDead() bool
 	getAlive() bool
 }
 
-func (p *basePiece) create(team int) {
-}
-
-func (p *basePiece) move(nPos coord, board *Board) bool {
-	return false
-}
-
-func (p *basePiece) specialMove(nPos coord, board *Board) bool {
+func (p *basePiece) specialMove(nPos coord, board *BoardData) bool {
 	return false
 }
 
@@ -60,7 +55,7 @@ func (p *basePiece) getLoc() coord {
 	return p.loc
 }
 
-func (p *basePiece) setLoc(board *Board, nPos coord) bool {
+func (p *basePiece) setLoc(board *BoardData, nPos coord) bool {
 	pieceAtPos := board.pCells[nPos.getX()][nPos.getY()].pPiece
 
 	if pieceAtPos.getChar() != p.getChar() || pieceAtPos.getTeam() != p.getTeam() {
@@ -104,10 +99,10 @@ func (p *Pawn) hasMoved() bool {
 	return p.moved
 }
 
-func (p *Pawn) move(nPos coord, board *Board) bool {
+func (p *Pawn) move(nPos coord, board *BoardData) bool {
 	x_offset := float64(nPos.getX() - p.loc.getX())
 	y_offset := float64(nPos.getY() - p.loc.getY())
-	nPos_Piece := pieceAtCell(board, nPos)
+	nPos_Piece := board.getCell(nPos).pPiece
 
 	// Check that the offsets are valid
 	if math.Abs(y_offset) > 1 {
@@ -138,7 +133,7 @@ func (p *Pawn) move(nPos coord, board *Board) bool {
 	return false
 }
 
-func (p *Pawn) specialMove(nPos coord, board *Board) bool {
+func (p *Pawn) specialMove(nPos coord, board *BoardData) bool {
 
 	// If the pawn has been moved already return false
 	if p.moved {
@@ -149,18 +144,18 @@ func (p *Pawn) specialMove(nPos coord, board *Board) bool {
 	y_offset := float64(nPos.getY() - p.loc.getY())
 
 	// Check that the offsets are valid
-	if math.Abs(y_offset) != 0 {
+	if math.Abs(x_offset) != 0 {
 		return false
 	}
 
 	if p.team == 1 && -1*x_offset == 2 {
 
 		// Check to see if both positions in front are empty
-		x := p.loc.getX() - 1
-		y := nPos.getY()
+		x := p.loc.getY() - 1
+		y := nPos.getX()
 		ternPos := coordData{x: x, y: y}
-		tPos_Piece := pieceAtCell(board, ternPos)
-		nPos_Piece := pieceAtCell(board, nPos)
+		tPos_Piece := board.getCell(ternPos).pPiece
+		nPos_Piece := board.getCell(nPos).pPiece
 
 		if nPos_Piece == nil && tPos_Piece == nil {
 			return true
@@ -171,8 +166,8 @@ func (p *Pawn) specialMove(nPos coord, board *Board) bool {
 
 		// Check to see if both positions in front are empty
 		ternPos := coordData{x: p.loc.getX() + 1, y: p.loc.getY()}
-		tPos_Piece := pieceAtCell(board, ternPos)
-		nPos_Piece := pieceAtCell(board, nPos)
+		tPos_Piece := board.getCell(ternPos).pPiece
+		nPos_Piece := board.getCell(nPos).pPiece
 
 		if nPos_Piece == nil && tPos_Piece == nil {
 			return true
@@ -206,7 +201,7 @@ func (r *Rook) hasMoved() bool {
 	return r.moved
 }
 
-func (r *Rook) move(nPos coord, board *Board) bool {
+func (r *Rook) move(nPos coord, board *BoardData) bool {
 	x_offset := float64(nPos.getX() - r.loc.getX())
 	y_offset := float64(nPos.getY() - r.loc.getY())
 	x_sign := int(x_offset / math.Abs(x_offset))
@@ -220,7 +215,7 @@ func (r *Rook) move(nPos coord, board *Board) bool {
 
 		for y := 0; y < int(math.Abs(y_offset)); y++ {
 			ternPos := coordData{x: r.loc.getX() + x_sign*x, y: r.loc.getY() + y_sign*y}
-			tPos_Piece := pieceAtCell(board, ternPos)
+			tPos_Piece := board.getCell(ternPos).pPiece
 
 			if tPos_Piece != nil {
 				return false
@@ -228,7 +223,7 @@ func (r *Rook) move(nPos coord, board *Board) bool {
 		}
 	}
 
-	nPos_Piece := pieceAtCell(board, nPos)
+	nPos_Piece := board.getCell(nPos).pPiece
 
 	if nPos_Piece == nil {
 		return true
@@ -236,10 +231,6 @@ func (r *Rook) move(nPos coord, board *Board) bool {
 		return true
 	}
 
-	return false
-}
-
-func (r *Rook) specialMove(nPos coord, board *Board) bool {
 	return false
 }
 
@@ -264,7 +255,7 @@ func (b *Bishop) hasMoved() bool {
 	return true
 }
 
-func (b *Bishop) move(nPos coord, board *Board) bool {
+func (b *Bishop) move(nPos coord, board *BoardData) bool {
 	x_offset := float64(nPos.getX() - b.loc.getX())
 	y_offset := float64(nPos.getY() - b.loc.getY())
 	x_sign := int(x_offset / math.Abs(x_offset))
@@ -277,14 +268,14 @@ func (b *Bishop) move(nPos coord, board *Board) bool {
 	for offset := 0; offset < int(math.Abs(x_offset)); offset++ {
 
 		ternPos := coordData{x: b.loc.getX() + x_sign*offset, y: b.loc.getY() + y_sign*offset}
-		tPos_Piece := pieceAtCell(board, ternPos)
+		tPos_Piece := board.getCell(ternPos).pPiece
 
 		if tPos_Piece != nil {
 			return false
 		}
 	}
 
-	nPos_Piece := pieceAtCell(board, nPos)
+	nPos_Piece := board.getCell(nPos).pPiece
 
 	if nPos_Piece == nil {
 		return true
@@ -294,10 +285,6 @@ func (b *Bishop) move(nPos coord, board *Board) bool {
 
 	return false
 
-}
-
-func (b *Bishop) specialMove(nPos coord, board *Board) bool {
-	return false
 }
 
 /***************************
@@ -322,7 +309,7 @@ func (n *Knight) hasMoved() bool {
 	return true
 }
 
-func (n *Knight) move(nPos coord, board *Board) bool {
+func (n *Knight) move(nPos coord, board *BoardData) bool {
 	x_offset := float64(nPos.getX() - n.loc.getX())
 	y_offset := float64(nPos.getY() - n.loc.getY())
 	total_offset := int(math.Abs(x_offset) + math.Abs(y_offset))
@@ -335,7 +322,7 @@ func (n *Knight) move(nPos coord, board *Board) bool {
 		return false
 	}
 
-	nPos_Piece := pieceAtCell(board, nPos)
+	nPos_Piece := board.getCell(nPos).pPiece
 
 	if nPos_Piece == nil {
 		return true
@@ -343,10 +330,6 @@ func (n *Knight) move(nPos coord, board *Board) bool {
 		return true
 	}
 
-	return false
-}
-
-func (n *Knight) specialMove(nPos coord, board *Board) bool {
 	return false
 }
 
@@ -374,12 +357,8 @@ func (q *Queen) hasMoved() bool {
 	return true
 }
 
-func (q *Queen) move(nPos coord, board *Board) bool {
+func (q *Queen) move(nPos coord, board *BoardData) bool {
 	return q.Bishop.move(nPos, board) || q.Rook.move(nPos, board)
-}
-
-func (q *Queen) specialMove(nPos coord, board *Board) bool {
-	return false
 }
 
 /***************************
@@ -406,7 +385,7 @@ func (k *King) hasMoved() bool {
 	return k.moved
 }
 
-func (k *King) move(nPos coord, board *Board) bool {
+func (k *King) move(nPos coord, board *BoardData) bool {
 	x_offset := float64(nPos.getX() - k.loc.getX())
 	y_offset := float64(nPos.getY() - k.loc.getY())
 	total_offset := int(math.Abs(x_offset) + math.Abs(y_offset))
@@ -423,7 +402,7 @@ func (k *King) move(nPos coord, board *Board) bool {
 		return false
 	}
 
-	nPos_Piece := pieceAtCell(board, nPos)
+	nPos_Piece := board.getCell(nPos).pPiece
 
 	if nPos_Piece == nil {
 		return true
@@ -434,7 +413,7 @@ func (k *King) move(nPos coord, board *Board) bool {
 	return false
 }
 
-func (k *King) specialMove(nPos coord, board *Board) bool {
+func (k *King) specialMove(nPos coord, board *BoardData) bool {
 	if k.moved {
 		return false
 	}
@@ -459,7 +438,7 @@ func (k *King) specialMove(nPos coord, board *Board) bool {
 
 	for x := begin; x <= end; x++ {
 		ternPos := coordData{x: x, y: castle_y}
-		tPos_Piece := pieceAtCell(board, ternPos)
+		tPos_Piece := board.getCell(ternPos).pPiece
 
 		if tPos_Piece != nil {
 			return false
@@ -471,7 +450,7 @@ func (k *King) specialMove(nPos coord, board *Board) bool {
 
 	if nPos.getX() == 2 {
 		rookPos := coordData{x: 0, y: castle_y}
-		rook_Piece := pieceAtCell(board, rookPos)
+		rook_Piece := board.getCell(rookPos).pPiece
 
 		if rook_Piece.getName() == "Rook" {
 			if !rook_Piece.hasMoved() {
@@ -480,7 +459,7 @@ func (k *King) specialMove(nPos coord, board *Board) bool {
 		}
 	} else {
 		rookPos := coordData{x: 7, y: castle_y}
-		rook_Piece := pieceAtCell(board, rookPos)
+		rook_Piece := board.getCell(rookPos).pPiece
 
 		if rook_Piece.getName() == "Rook" {
 			if !rook_Piece.hasMoved() {
