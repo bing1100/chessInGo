@@ -29,6 +29,7 @@ type Piece interface {
 	getLoc() coord
 	setDead() bool
 	getAlive() bool
+	copy(source Piece)
 }
 
 func (p *basePiece) specialMove(nPos coord, board *BoardData) bool {
@@ -105,25 +106,25 @@ func (p *Pawn) move(nPos coord, board *BoardData) bool {
 	nPos_Piece := board.getCell(nPos).pPiece
 
 	// Check that the offsets are valid
-	if math.Abs(y_offset) > 1 {
+	if math.Abs(x_offset) > 1 {
 		return false
 	}
 
-	if p.team == 1 && x_offset != -1 {
+	if p.team == 1 && y_offset != -1 {
 		return false
 	}
 
-	if p.team == 0 && x_offset != 1 {
+	if p.team == 0 && y_offset != 1 {
 		return false
 	}
 
 	// If the move is forward check that the forward square is empty
-	if y_offset == 0 && nPos_Piece == nil {
+	if x_offset == 0 && nPos_Piece == nil {
 		return true
 	}
 
 	// If the move is attacking check that the attacked squares non-empty
-	if y_offset != 0 && nPos_Piece != nil {
+	if x_offset != 0 && nPos_Piece != nil {
 		if nPos_Piece.getTeam()+p.team == 1 {
 			return true
 		}
@@ -148,11 +149,11 @@ func (p *Pawn) specialMove(nPos coord, board *BoardData) bool {
 		return false
 	}
 
-	if p.team == 1 && -1*x_offset == 2 {
+	if p.team == 1 && -1*y_offset == 2 {
 
 		// Check to see if both positions in front are empty
-		x := p.loc.getY() - 1
-		y := nPos.getX()
+		y := p.loc.getY() - 1
+		x := nPos.getX()
 		ternPos := coordData{x: x, y: y}
 		tPos_Piece := board.getCell(ternPos).pPiece
 		nPos_Piece := board.getCell(nPos).pPiece
@@ -162,10 +163,12 @@ func (p *Pawn) specialMove(nPos coord, board *BoardData) bool {
 		}
 	}
 
-	if p.team == 0 && x_offset == 2 {
+	if p.team == 0 && y_offset == 2 {
 
 		// Check to see if both positions in front are empty
-		ternPos := coordData{x: p.loc.getX() + 1, y: p.loc.getY()}
+		y := p.loc.getY() + 1
+		x := nPos.getX()
+		ternPos := coordData{x: x, y: y}
 		tPos_Piece := board.getCell(ternPos).pPiece
 		nPos_Piece := board.getCell(nPos).pPiece
 

@@ -1,5 +1,9 @@
 package main
 
+import (
+	"reflect"
+)
+
 /***************************
 
 Board and Cell structure
@@ -12,8 +16,8 @@ type Cell struct {
 }
 
 type BoardData struct {
-	pCells    [8][8]*Cell
-	pieces    [2][16]Piece
+	pCells    *[8][8]*Cell
+	pieces    *[2]*[16]Piece
 	whoseMove int
 }
 
@@ -24,6 +28,7 @@ type Board interface {
 	setPiece(cPos coord, piece Piece) bool
 	getNext() int
 	move(cPos coord, nPos coord) bool
+	copy(source BoardData) bool
 }
 
 func (b *BoardData) getCell(coord coord) *Cell {
@@ -49,6 +54,11 @@ func (b *BoardData) getNext() int {
 	return b.whoseMove
 }
 
+func (b *BoardData) copy(source BoardData) bool {
+
+	return true
+}
+
 /***************************
 
 Interface to create new board
@@ -66,8 +76,8 @@ func createCell(x int, y int) *Cell {
 	return cell
 }
 
-func createPieces(team int, board *BoardData) [16]Piece {
-	pieces := *(new([16]Piece))
+func createPieces(team int, board *BoardData) *[16]Piece {
+	pieces := new([16]Piece)
 	for i := 0; i < 8; i++ {
 		pieces[i] = new(Pawn)
 	}
@@ -110,12 +120,13 @@ func createPieces(team int, board *BoardData) [16]Piece {
 
 func (b *BoardData) createBoard() {
 
-	b.pCells = *(new([8][8]*Cell))
+	b.pCells = new([8][8]*Cell)
 	for x := 0; x < 8; x++ {
 		for y := 0; y < 8; y++ {
 			b.pCells[x][y] = createCell(x, y)
 		}
 	}
+	b.pieces = new([2]*[16]Piece)
 
 	b.pieces[0] = createPieces(0, b)
 	b.pieces[1] = createPieces(1, b)
@@ -185,7 +196,12 @@ Move function that moves piece
 ****************************/
 func (b *BoardData) move(cPos coord, nPos coord) bool {
 	cPiece := b.getCell(cPos).pPiece
-	tempBoard := Copy(b).(*BoardData)
+	tempBoard := new(Board)
+	reflect.Copy(b, tempBoard)
+
+	if tempBoard.pCells == nil {
+		print("WHAT?")
+	}
 
 	if cPiece == nil {
 
